@@ -1,10 +1,15 @@
 #include <stdio.h>
-
+#include <string.h>
+#include <stdlib.h>
+#include <termios.h>
+#include <unistd.h>
 typedef struct elemento {
     char nome[31];
     struct elemento * anterior;
     struct elemento * proximo;
 } elemento;
+
+elemento *inicio = NULL;
 
 elemento * criarNo(char * nome) {
     elemento * novo = (elemento *)malloc(sizeof(elemento));
@@ -30,7 +35,6 @@ void inserir(elemento **cabeca, char *nome) {
         
         if (strcmp(nome, atual->nome) < 0) {
             elemento *ultimo = (*cabeca)->anterior;
-            
             novo->proximo = *cabeca;
             novo->anterior = ultimo;
             ultimo->proximo = novo;
@@ -51,27 +55,44 @@ void inserir(elemento **cabeca, char *nome) {
 }
 
 void navegar(elemento *cabeca) {
+    struct termios oldt, newt;
+    int ch;
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+    newt.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+
     if (cabeca == NULL) {
         printf("A lista esta vazia.\n");
         return;
     }
 
     elemento *atual = cabeca;
-    char comando;
 
-    do {
-        printf("\n--- Navegador Circular ---\n");
-        printf("Anterior: [%s] | ATUAL: << %s >> | Proximo: [%s]\n", 
+    while (1) {
+        system("clear");
+        printf("%s\n\n%s \n\n%s\n", 
                 atual->anterior->nome, atual->nome, atual->proximo->nome);
-        printf("[1] Proximo | [2] Anterior | [0] Sair\nEscolha: ");
-        scanf(" %c", &comando);
+        printf("\n\n[<-] Anterior | [->] Próximo | [ESC] Sair");
 
-        if (comando == '1') {
-            atual = atual->proximo;
-        } else if (comando == '2') {
-            atual = atual->anterior;
+        ch = getchar();
+        if (ch == 27) {
+            int seq1 = getchar();
+            int seq2 = getchar();
+            if (seq1 == '[') {
+                if (seq2 == 'C') {
+                    atual = atual->proximo;
+                } else if (seq2 == 'D') {
+                    atual = atual->anterior;
+                } else {
+                    break;
+                }
+            } else {
+                break;
+            }
         }
-    } while (comando != '0');
+    }
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 }
 
 void listar(elemento *cabeca) {
@@ -87,28 +108,91 @@ void listar(elemento *cabeca) {
     } while (temp != cabeca);
 }
 
+
+void excluir(elemento **cabeca, char *nome) {
+    if (*cabeca == NULL) {
+        printf("A lista esta vazia.\n");
+        return;
+    }
+
+    elemento *atual = *cabeca;
+    elemento *alvo = NULL;
+
+    do {
+        if (strcmp(atual->nome, nome) == 0) {
+            alvo = atual;
+            break;
+        }
+        atual = atual->proximo;
+    } while (atual != *cabeca);
+
+    if (alvo == NULL) {
+        printf("Nome '%s' nao encontrado.\n", nome);
+        return;
+    }
+
+    if (alvo->proximo == alvo) {
+        *cabeca = NULL;
+    } else {
+        alvo->anterior->proximo = alvo->proximo;
+        alvo->proximo->anterior = alvo->anterior;
+        if (alvo == *cabeca) {
+            *cabeca = alvo->proximo;
+        }
+    }
+
+    free(alvo);
+    printf("Nome '%s' removido.\n", nome);
+}
+
+void contar() {
+    if (inicio == NULL) {
+        printf("Total de elementos: 0\n");
+        return;
+    }
+    int count = 0;
+    elemento * atual = inicio;
+    do {
+        count++;
+        atual = atual->proximo;
+    } while (atual != inicio);
+    printf("Total de elementos: %d\n", count);
+}
+
 int main() {
-    elemento *lista = NULL;
-    int menu;
+    int menu = 1;
+    elemento * novo;
+    char nome[31];
     char buffer[31];
 
     while (menu != 0) {
-        printf("\n\nComandos: \n\n0 para sair\n1 para adicionar um elemento\n2 para listar os elementos\n3 para navegar pelos elementos\n\nDigite: ");
+        printf("\n\nComandos: \n\n0 para sair\n1 para adicionar um elemento\n2 para listar os elementos\n3 para navegar pelos elementos\n4 para remover um elemento\n5 para contar os elementos\n\nDigite: ");
         scanf("%d", &menu);
         system("clear");
 
         switch(menu) {
             case 1:
-                printf("Digite o nome: ");
-                fgets(buffer, 31, stdin);
-                buffer[strcspn(buffer, "\n")] = '\0';
-                inserir(&lista, buffer);
+                printf("\nDigite o nome: ");
+                scanf("%s", buffer);
+                strncpy(nome, buffer, 30);
+                nome[30] = '\0';
+                inserir(&inicio, nome);
                 break;
             case 2:
-                listar(lista);
+                listar(inicio);
                 break;
             case 3:
-                navegar(lista);
+                navegar(inicio);
+                break;
+            case 4:
+                printf("\nDigite o nome: ");
+                scanf("%s", nome);
+                strncpy(buffer, nome, 30);
+                buffer[30] = '\0';
+                excluir(&inicio, buffer);
+                break;
+            case 5:
+                contar();
                 break;
         }
     }
