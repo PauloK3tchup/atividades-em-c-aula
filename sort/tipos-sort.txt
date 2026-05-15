@@ -1,0 +1,5 @@
+Simples:
+Insertion Sort, Selection Sort, Bubble Sort, Comb Sort
+
+Eficientes:
+Quick sort, Merge sort, Shell sort, Heap sort, Radix sort, Gnome sort, Count sort, Bucket sort, Cocktail sort, Timsort

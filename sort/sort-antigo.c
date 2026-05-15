@@ -8,61 +8,6 @@ struct lista {
 } lista[MAX];
 
 int total;
-int trocas = 0;
-
-void trocar(struct lista *a, struct lista *b) {
-    struct lista temp = *a;
-    *a = *b;
-    *b = temp;
-    trocas++;
-}
-
-int particionar(int baixo, int alto) {
-    int pivo = lista[alto].codigo;
-    int i = (baixo - 1); 
-
-    for (int j = baixo; j <= alto - 1; j++) {
-        if (lista[j].codigo < pivo) {
-            i++;
-            trocar(&lista[i], &lista[j]);
-        }
-    }
-    trocar(&lista[i + 1], &lista[alto]);
-    return (i + 1);
-}
-
-int particionar_nome(int baixo, int alto) {
-    char pivo[100]; 
-    strcpy(pivo, lista[alto].nome);
-    
-    int i = (baixo - 1); 
-
-    for (int j = baixo; j <= alto - 1; j++) {
-        if (strcmp(lista[j].nome, pivo) < 0) {
-            i++;
-            trocar(&lista[i], &lista[j]);
-        }
-    }
-    trocar(&lista[i + 1], &lista[alto]);
-    return (i + 1);
-}
-
-void quickSort(int baixo, int alto) {
-    if (baixo < alto) {
-        int pi = particionar(baixo, alto);
-        quickSort(baixo, pi - 1);
-        quickSort(pi + 1, alto);
-    }
-}
-
-void quickSort_nome(int baixo, int alto) {
-    if (baixo < alto) {
-        int pi = particionar_nome(baixo, alto);
-
-        quickSort_nome(baixo, pi - 1);
-        quickSort_nome(pi + 1, alto);
-    }
-}
 
 int ler_nomes(const char *arquivo) {
     FILE *fp = fopen(arquivo, "r");
@@ -89,19 +34,31 @@ int ler_nomes(const char *arquivo) {
 }
 
 void ordenar_codigo() {
-    trocas = 0;
-    
-    if (total > 0) {
-        quickSort(0, total - 1);
+    int trocas = 0;
+    for (int i = 0; i < total - 1; i++) {
+        for (int j = 0; j < total - i - 1; j++) {
+            if (lista[j].codigo > lista[j + 1].codigo) {
+                struct lista temp = lista[j];
+                lista[j] = lista[j + 1];
+                lista[j + 1] = temp;
+                trocas++;
+            }
+        }
     }
     printf("Número de trocas realizadas: %d\n", trocas);
 }
 
 void ordenar_nome() {
-    trocas = 0;
-    
-    if (total > 0) {
-        quickSort_nome(0, total - 1);
+    int trocas = 0;
+    for (int i = 0; i < total - 1; i++) {
+        for (int j = 0; j < total - i - 1; j++) {
+            if (strcmp(lista[j].nome, lista[j + 1].nome) > 0) {
+                trocas++;
+                struct lista temp = lista[j];
+                lista[j] = lista[j + 1];
+                lista[j + 1] = temp;
+            }
+        }
     }
     printf("Número de trocas realizadas: %d\n", trocas);
 }
